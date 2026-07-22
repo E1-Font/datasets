@@ -25,77 +25,163 @@ def gerar_dataset(matricula, n=1500):
 
 
     # =========================================================
-    # Características específicas do dataset
+    # Variável categórica do aluno
+    #
+    # Cada dataset possui EXATAMENTE uma variável categórica.
     # =========================================================
 
-    incluir_fluido = d1 < 5
-    incluir_periodo = d2 < 5
-    incluir_pressao = d3 < 5
+    if d1 <= 3:
+        variavel_categorica = "Nivel_manutencao"
+
+    elif d1 <= 6:
+        variavel_categorica = "Fluido_quente"
+
+    else:
+        variavel_categorica = "Periodo_operacao"
+
+
+    # =========================================================
+    # Presença das variáveis de pressão
+    # =========================================================
+
+    incluir_pressao = d2 < 5
 
 
     # =========================================================
     # Intensidade do ruído
+    #
+    # Varia aproximadamente entre 0.85 e 1.12
     # =========================================================
 
-    fator_ruido = 0.85 + 0.03 * d4
+    fator_ruido = 0.85 + 0.03 * d3
 
 
     # =========================================================
     # Distribuição das classes
+    #
+    # O grau de desbalanceamento depende da matrícula.
     # =========================================================
 
-    p_normal = 0.65 + 0.015 * d5
+    p_normal = 0.65 + 0.015 * d4
 
-    # Limitamos para evitar desbalanceamento excessivo
     p_normal = min(p_normal, 0.78)
 
-    restante = 1 - p_normal
+    restante = 1.0 - p_normal
+
+
+    # O último dígito também altera ligeiramente a distribuição
+    # das classes minoritárias.
+
+    fracao_incrustacao = 0.46 + 0.01 * d5
+
+    fracao_baixa_vazao = 0.34 - 0.005 * d5
+
+    fracao_refrigeracao = (
+        1.0
+        - fracao_incrustacao
+        - fracao_baixa_vazao
+    )
+
 
     probabilidades = [
+
         p_normal,
-        restante * 0.50,
-        restante * 0.32,
-        restante * 0.18
+
+        restante * fracao_incrustacao,
+
+        restante * fracao_baixa_vazao,
+
+        restante * fracao_refrigeracao
     ]
 
+
+    # Garante que a soma seja exatamente 1
+    probabilidades = np.array(probabilidades)
+
+    probabilidades = (
+        probabilidades
+        / probabilidades.sum()
+    )
+
+
     classes = rng.choice(
+
         [
             "Normal",
             "Incrustacao",
             "Baixa_vazao",
             "Falha_refrigeracao"
         ],
+
         size=n,
+
         p=probabilidades
     )
 
 
     # =========================================================
-    # Variáveis categóricas
+    # Variável categórica
     # =========================================================
 
-    nivel_manutencao = rng.choice(
-        ["Ruim", "Regular", "Bom", "Excelente"],
-        size=n,
-        p=[0.10, 0.25, 0.40, 0.25]
-    )
+    if variavel_categorica == "Nivel_manutencao":
 
+        categoria = rng.choice(
 
-    if incluir_fluido:
+            [
+                "Ruim",
+                "Regular",
+                "Bom",
+                "Excelente"
+            ],
 
-        fluido_quente = rng.choice(
-            ["Agua", "Oleo_termico", "Solucao_aquosa"],
             size=n,
-            p=[0.40, 0.35, 0.25]
+
+            p=[
+                0.10,
+                0.25,
+                0.40,
+                0.25
+            ]
         )
 
 
-    if incluir_periodo:
+    elif variavel_categorica == "Fluido_quente":
 
-        periodo_operacao = rng.choice(
-            ["Novo", "Intermediario", "Proximo_manutencao"],
+        categoria = rng.choice(
+
+            [
+                "Agua",
+                "Oleo_termico",
+                "Solucao_aquosa"
+            ],
+
             size=n,
-            p=[0.30, 0.45, 0.25]
+
+            p=[
+                0.40,
+                0.35,
+                0.25
+            ]
+        )
+
+
+    else:
+
+        categoria = rng.choice(
+
+            [
+                "Novo",
+                "Intermediario",
+                "Proximo_manutencao"
+            ],
+
+            size=n,
+
+            p=[
+                0.30,
+                0.45,
+                0.25
+            ]
         )
 
 
@@ -104,86 +190,85 @@ def gerar_dataset(matricula, n=1500):
     # =========================================================
 
     temperatura_entrada_quente = rng.normal(
-        125,
-        8 * fator_ruido,
-        n
+        loc=125,
+        scale=8 * fator_ruido,
+        size=n
     )
+
 
     temperatura_entrada_fria = rng.normal(
-        28,
-        3 * fator_ruido,
-        n
+        loc=28,
+        scale=3 * fator_ruido,
+        size=n
     )
+
 
     vazao_quente = rng.normal(
-        100,
-        8 * fator_ruido,
-        n
+        loc=100,
+        scale=8 * fator_ruido,
+        size=n
     )
+
 
     vazao_fria = rng.normal(
-        115,
-        9 * fator_ruido,
-        n
+        loc=115,
+        scale=9 * fator_ruido,
+        size=n
     )
 
 
     # =========================================================
-    # Efeito do fluido, quando disponível
+    # Fator associado à variável categórica
+    #
+    # Somente a variável presente no dataset influencia
+    # o processo.
     # =========================================================
 
-    if incluir_fluido:
+    if variavel_categorica == "Nivel_manutencao":
 
-        efeito_fluido = {
+        efeito_categoria = {
+
+            "Ruim": 0.85,
+
+            "Regular": 0.92,
+
+            "Bom": 1.00,
+
+            "Excelente": 1.04
+        }
+
+
+    elif variavel_categorica == "Fluido_quente":
+
+        efeito_categoria = {
+
             "Agua": 1.00,
+
             "Oleo_termico": 0.82,
+
             "Solucao_aquosa": 0.92
         }
 
-        fator_fluido = np.array(
-            [efeito_fluido[x] for x in fluido_quente]
-        )
 
     else:
 
-        fator_fluido = np.ones(n)
+        efeito_categoria = {
 
-
-    # =========================================================
-    # Efeito da manutenção
-    # =========================================================
-
-    efeito_manutencao = {
-        "Ruim": 0.85,
-        "Regular": 0.92,
-        "Bom": 1.00,
-        "Excelente": 1.04
-    }
-
-    fator_manutencao = np.array(
-        [efeito_manutencao[x] for x in nivel_manutencao]
-    )
-
-
-    # =========================================================
-    # Efeito do período de operação, quando disponível
-    # =========================================================
-
-    if incluir_periodo:
-
-        efeito_periodo = {
             "Novo": 1.04,
+
             "Intermediario": 1.00,
+
             "Proximo_manutencao": 0.90
         }
 
-        fator_periodo = np.array(
-            [efeito_periodo[x] for x in periodo_operacao]
-        )
 
-    else:
+    fator_categoria = np.array(
 
-        fator_periodo = np.ones(n)
+        [
+            efeito_categoria[x]
+            for x in categoria
+        ]
+    )
 
 
     # =========================================================
@@ -192,148 +277,163 @@ def gerar_dataset(matricula, n=1500):
 
     eficiencia = (
         0.72
-        * fator_fluido
-        * fator_manutencao
-        * fator_periodo
+        * fator_categoria
     )
 
 
     # =========================================================
-    # Modificação conforme o estado operacional
+    # Máscaras correspondentes às classes
     # =========================================================
 
-    mascara_incrustacao = classes == "Incrustacao"
-    mascara_baixa_vazao = classes == "Baixa_vazao"
-    mascara_refrigeracao = classes == "Falha_refrigeracao"
-
-
-    # ---------------------------------------------------------
-    # ---------------------------------------------------------
-
-    eficiencia[mascara_incrustacao] *= rng.normal(
-        0.68,
-        0.05 * fator_ruido,
-        mascara_incrustacao.sum()
+    mascara_incrustacao = (
+        classes == "Incrustacao"
     )
 
-
-    # ---------------------------------------------------------
-    # ---------------------------------------------------------
-
-    vazao_quente[mascara_baixa_vazao] *= rng.normal(
-        0.58,
-        0.06 * fator_ruido,
-        mascara_baixa_vazao.sum()
+    mascara_baixa_vazao = (
+        classes == "Baixa_vazao"
     )
 
-
-    # ---------------------------------------------------------
-
-    # ---------------------------------------------------------
-
-    vazao_fria[mascara_refrigeracao] *= rng.normal(
-        0.50,
-        0.07 * fator_ruido,
-        mascara_refrigeracao.sum()
+    mascara_refrigeracao = (
+        classes == "Falha_refrigeracao"
     )
 
 
     # =========================================================
-    # Temperaturas de saída
+    # INCRUSTAÇÃO
+    #
+    # Reduz a eficiência de transferência térmica.
+    # =========================================================
+
+    eficiencia[
+        mascara_incrustacao
+    ] *= rng.normal(
+
+        loc=0.68,
+
+        scale=0.05 * fator_ruido,
+
+        size=mascara_incrustacao.sum()
+    )
+
+
+    # =========================================================
+    # BAIXA VAZÃO
+    #
+    # Redução da vazão da corrente quente.
+    # =========================================================
+
+    vazao_quente[
+        mascara_baixa_vazao
+    ] *= rng.normal(
+
+        loc=0.58,
+
+        scale=0.06 * fator_ruido,
+
+        size=mascara_baixa_vazao.sum()
+    )
+
+
+    # =========================================================
+    # FALHA DE REFRIGERAÇÃO
+    #
+    # Redução da vazão da corrente fria.
+    # =========================================================
+
+    vazao_fria[
+        mascara_refrigeracao
+    ] *= rng.normal(
+
+        loc=0.50,
+
+        scale=0.07 * fator_ruido,
+
+        size=mascara_refrigeracao.sum()
+    )
+
+
+    # =========================================================
+    # Diferença de temperatura
     # =========================================================
 
     delta_temperatura = (
+
         temperatura_entrada_quente
+
         - temperatura_entrada_fria
     )
 
 
+    # =========================================================
+    # Temperatura de saída da corrente quente
+    # =========================================================
+
     temperatura_saida_quente = (
+
         temperatura_entrada_quente
-        - eficiencia * 0.55 * delta_temperatura
+
+        - eficiencia
+        * 0.55
+        * delta_temperatura
+
         + rng.normal(
-            0,
-            1.5 * fator_ruido,
-            n
+            loc=0,
+            scale=1.5 * fator_ruido,
+            size=n
         )
     )
 
+
+    # =========================================================
+    # Temperatura de saída da corrente fria
+    # =========================================================
 
     temperatura_saida_fria = (
+
         temperatura_entrada_fria
-        + eficiencia * 0.42 * delta_temperatura
+
+        + eficiencia
+        * 0.42
+        * delta_temperatura
+
         + rng.normal(
-            0,
-            1.5 * fator_ruido,
-            n
+            loc=0,
+            scale=1.5 * fator_ruido,
+            size=n
         )
     )
 
 
+    # =========================================================
+    # Efeito adicional da falha de refrigeração
+    # =========================================================
 
     temperatura_saida_quente[
         mascara_refrigeracao
     ] += rng.normal(
-        12,
-        2 * fator_ruido,
-        mascara_refrigeracao.sum()
+
+        loc=12,
+
+        scale=2 * fator_ruido,
+
+        size=mascara_refrigeracao.sum()
     )
 
 
     temperatura_saida_fria[
         mascara_refrigeracao
     ] += rng.normal(
-        7,
-        1.5 * fator_ruido,
-        mascara_refrigeracao.sum()
+
+        loc=7,
+
+        scale=1.5 * fator_ruido,
+
+        size=mascara_refrigeracao.sum()
     )
 
 
     # =========================================================
-    # Pressões
-    #
-    # Somente são geradas se estiverem disponíveis para
-    # aquele aluno.
-    # =========================================================
-
-    if incluir_pressao:
-
-        pressao_entrada = rng.normal(
-            5.5,
-            0.35 * fator_ruido,
-            n
-        )
-
-        queda_pressao = (
-            0.6
-            + 0.00004 * vazao_quente**2
-            + rng.normal(
-                0,
-                0.12 * fator_ruido,
-                n
-            )
-        )
-
-
-        # Incrustação também aumenta a queda de pressão
-
-        queda_pressao[
-            mascara_incrustacao
-        ] *= rng.normal(
-            1.60,
-            0.10 * fator_ruido,
-            mascara_incrustacao.sum()
-        )
-
-
-        pressao_saida = (
-            pressao_entrada
-            - queda_pressao
-        )
-
-
-    # =========================================================
-    # Construção do DataFrame
+    # Construção inicial do DataFrame
     # =========================================================
 
     dados = {
@@ -354,39 +454,94 @@ def gerar_dataset(matricula, n=1500):
             vazao_quente,
 
         "Vazao_fria":
-            vazao_fria,
-
-        "Nivel_manutencao":
-            nivel_manutencao
+            vazao_fria
     }
 
 
     # =========================================================
-    # Variáveis opcionais
+    # Pressões
+    #
+    # Presentes somente para algumas matrículas.
     # =========================================================
 
     if incluir_pressao:
 
-        dados["Pressao_entrada"] = pressao_entrada
-        dados["Pressao_saida"] = pressao_saida
+        pressao_entrada = rng.normal(
+
+            loc=5.5,
+
+            scale=0.35 * fator_ruido,
+
+            size=n
+        )
 
 
-    if incluir_fluido:
+        queda_pressao = (
 
-        dados["Fluido_quente"] = fluido_quente
+            0.6
+
+            + 0.00004
+            * vazao_quente**2
+
+            + rng.normal(
+
+                loc=0,
+
+                scale=0.12 * fator_ruido,
+
+                size=n
+            )
+        )
 
 
-    if incluir_periodo:
+        # A incrustação aumenta a queda de pressão
 
-        dados["Periodo_operacao"] = periodo_operacao
+        queda_pressao[
+            mascara_incrustacao
+        ] *= rng.normal(
+
+            loc=1.60,
+
+            scale=0.10 * fator_ruido,
+
+            size=mascara_incrustacao.sum()
+        )
+
+
+        pressao_saida = (
+
+            pressao_entrada
+
+            - queda_pressao
+        )
+
+
+        dados["Pressao_entrada"] = (
+            pressao_entrada
+        )
+
+        dados["Pressao_saida"] = (
+            pressao_saida
+        )
 
 
     # =========================================================
-    # Target
+    # Adiciona EXATAMENTE uma variável categórica
+    # =========================================================
+
+    dados[variavel_categorica] = categoria
+
+
+    # =========================================================
+    # Variável alvo
     # =========================================================
 
     dados["Estado"] = classes
 
+
+    # =========================================================
+    # DataFrame
+    # =========================================================
 
     df = pd.DataFrame(dados)
 
