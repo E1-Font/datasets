@@ -523,20 +523,35 @@ def gerar_dataset(matricula, n=1500):
         dados["Pressao_saida"] = (
             pressao_saida
         )
-
-
     # =========================================================
     # Adiciona EXATAMENTE uma variável categórica
     # =========================================================
 
     dados[variavel_categorica] = categoria
 
-
     # =========================================================
     # Variável alvo
+    #
+    # Label encoding:
+    # 0 = Normal
+    # 1 = Incrustacao
+    # 2 = Baixa_vazao
+    # 3 = Falha_refrigeracao
     # =========================================================
 
-    dados["Estado"] = classes
+    mapa_estado = {
+        "Normal": 0,
+        "Incrustacao": 1,
+        "Baixa_vazao": 2,
+        "Falha_refrigeracao": 3
+    }
+
+    estado = np.array(
+        [mapa_estado[x] for x in classes],
+        dtype=int
+    )
+
+    dados["Estado"] = estado
 
 
     # =========================================================
@@ -544,6 +559,5 @@ def gerar_dataset(matricula, n=1500):
     # =========================================================
 
     df = pd.DataFrame(dados)
-
 
     return df
