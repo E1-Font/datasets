@@ -68,11 +68,11 @@ def gerar_dataset(grr):
     # =========================================================
 
     if d2 <= 3:
-        ruido_relativo = 0.00
+        ruido_relativo = 0.001
     elif d2 <= 6:
-        ruido_relativo = 0.005
+        ruido_relativo = 0.002
     else:
-        ruido_relativo = 0.008
+        ruido_relativo = 0.003
 
     # =========================================================
     # Velocidade superficial
