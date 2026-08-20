@@ -53,8 +53,8 @@ def gerar_dataset(matricula, n=1500):
     # Varia aproximadamente entre 0.85 e 1.12
     # =========================================================
 
-    fator_ruido = 0.85 + 0.03 * d3
-
+    #fator_ruido = 0.85 + 0.03 * d3
+    fator_ruido = 1.25 + 0.03 * d3
 
     # =========================================================
     # Distribuição das classes
@@ -62,7 +62,7 @@ def gerar_dataset(matricula, n=1500):
     # O grau de desbalanceamento depende da matrícula.
     # =========================================================
 
-    p_normal = 0.65 + 0.015 * d4
+    p_normal = 0.65 + 0.0275 * d4
 
     p_normal = min(p_normal, 0.78)
 
@@ -72,9 +72,9 @@ def gerar_dataset(matricula, n=1500):
     # O último dígito também altera ligeiramente a distribuição
     # das classes minoritárias.
 
-    fracao_incrustacao = 0.46 + 0.01 * d5
+    fracao_incrustacao = 0.46 + 0.02 * d5
 
-    fracao_baixa_vazao = 0.34 - 0.005 * d5
+    fracao_baixa_vazao = 0.34 - 0.025 * d5
 
     fracao_refrigeracao = (
         1.0
