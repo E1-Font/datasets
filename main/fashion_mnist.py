@@ -6,7 +6,7 @@ from tensorflow.keras.datasets import fashion_mnist
 def gerar_dataset_fashion_mnist(
     GRR,
     n_classes=6,
-    n_por_classe=150,
+    n_por_classe=90,
     normalizar=True
 ):
     """
@@ -43,11 +43,14 @@ def gerar_dataset_fashion_mnist(
 
     GRR = str(GRR)
 
+    n_classes = 4 + GRR[-1]
+
+
     # ---------------------------------------------------------
     # 1. Validação
     # ---------------------------------------------------------
 
-    if not 4 <= n_classes <= 10:
+    if not 3 <= n_classes <= 10:
         raise ValueError("n_classes deve estar entre 2 e 10.")
 
     if n_por_classe < 1:
