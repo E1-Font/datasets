@@ -41,9 +41,10 @@ def gerar_dataset_fashion_mnist(
 
     """
 
+    n_classes = 4 + GRR[-1]
+    
     GRR = str(GRR)
 
-    n_classes = 4 + GRR[-1]
 
 
     # ---------------------------------------------------------
