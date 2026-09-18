@@ -206,3 +206,137 @@ def plotar_imagens(X, n_imagens=10, seed=None):
 
     plt.tight_layout()
     plt.show()
+
+
+
+def gerar_embeddings_resnet50(X, batch_size=128):
+    """
+    Gera embeddings de imagens Fashion-MNIST usando uma ResNet50
+    pré-treinada no ImageNet, adaptada para entrada grayscale.
+
+    Parâmetros
+    ----------
+    X : numpy.ndarray
+        Imagens no formato (N, 784), com pixels normalizados em [0, 1]
+        ou no intervalo [0, 255].
+
+    batch_size : int
+        Número de imagens processadas simultaneamente.
+
+    Retorno
+    --------
+    embeddings : numpy.ndarray
+        Embeddings no formato (N, 2048).
+    """
+    
+    import torch
+    import numpy as np
+    from torchvision.models import resnet50, ResNet50_Weights
+    from torchvision import transforms
+    from PIL import Image
+
+
+    # GPU se disponível
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
+
+    print(f"Dispositivo: {device}")
+
+    # --------------------------------------------------
+    # ResNet50 pré-treinada
+    # --------------------------------------------------
+
+    weights = ResNet50_Weights.DEFAULT
+    model = resnet50(weights=weights)
+
+    # --------------------------------------------------
+    # Modifica a primeira camada para 1 canal
+    # --------------------------------------------------
+
+    old_conv = model.conv1
+
+    model.conv1 = torch.nn.Conv2d(
+        in_channels=1,
+        out_channels=old_conv.out_channels,
+        kernel_size=old_conv.kernel_size,
+        stride=old_conv.stride,
+        padding=old_conv.padding,
+        bias=False
+    )
+
+    # Aproveita os pesos RGB pré-treinados
+    with torch.no_grad():
+        model.conv1.weight[:] = old_conv.weight.mean(
+            dim=1,
+            keepdim=True
+        )
+
+    # Remove a camada de classificação
+    model.fc = torch.nn.Identity()
+
+    model = model.to(device)
+    model.eval()
+
+    # --------------------------------------------------
+    # Pré-processamento
+    # --------------------------------------------------
+
+    transform = transforms.Compose([
+        transforms.Resize(224),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485],
+            std=[0.229]
+        )
+    ])
+
+    # --------------------------------------------------
+    # Converte X para imagens
+    # --------------------------------------------------
+
+    X_tensor = np.asarray(X)
+
+    # Normaliza caso X esteja em [0,255]
+    if X_tensor.max() > 1:
+        X_tensor = X_tensor / 255.0
+
+    imagens = []
+
+    for img in X_tensor:
+
+        img = img.reshape(28, 28)
+
+        img = Image.fromarray(
+            (img * 255).astype(np.uint8)
+        )
+
+        img = transform(img)
+
+        imagens.append(img)
+
+    imagens = torch.stack(imagens)
+
+    # --------------------------------------------------
+    # Geração dos embeddings em batches
+    # --------------------------------------------------
+
+    embeddings = []
+
+    with torch.no_grad():
+
+        for i in range(0, len(imagens), batch_size):
+
+            batch = imagens[i:i + batch_size]
+            batch = batch.to(device)
+
+            output = model(batch)
+
+            embeddings.append(
+                output.cpu()
+            )
+
+    # Junta todos os batches
+    embeddings = torch.cat(embeddings)
+
+    return embeddings.numpy()
