@@ -43,7 +43,7 @@ def gerar_dataset_fashion_mnist(
 
     GRR = str(GRR)
 
-    n_classes = 4 + int(str(GRR)[-1])
+    n_classes =  4 + (int(str(GRR)[-1]) % 6)
 
     # ---------------------------------------------------------
     # 1. Validação
