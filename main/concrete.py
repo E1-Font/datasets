@@ -86,8 +86,8 @@ def criar_dataset_concreto(GRR):
     # Cria a classificação
     df["Approved"] = np.where(
         df[target_name] >= threshold,
-        "yes",
-        "no"
+        1,
+        0
     )
 
     # ============================================================
