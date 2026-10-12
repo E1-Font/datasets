@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import zipfile
 import shutil
+import torch
 
 
 def carregar_dataset(grr, img_size=(128, 128)):
@@ -118,20 +119,19 @@ def carregar_dataset(grr, img_size=(128, 128)):
         imagens = []
 
         extensoes = {
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".bmp",
-            ".webp"
-        }
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".bmp",
+        ".webp"
+    }
 
-        for arquivo in Path(diretorio).rglob("*"):
+        for arquivo in sorted(Path(diretorio).rglob("*")):
 
             if arquivo.suffix.lower() not in extensoes:
                 continue
 
             try:
-
                 img = Image.open(arquivo).convert("RGB")
                 img = img.resize(img_size)
 
@@ -140,34 +140,22 @@ def carregar_dataset(grr, img_size=(128, 128)):
                     dtype=np.float32
                 ) / 255.0
 
+                # HWC -> CHW
+                img = torch.from_numpy(
+                    img
+                ).permute(2, 0, 1).contiguous()
+
                 imagens.append(img)
 
             except Exception as e:
-
                 print(f"Erro ao carregar {arquivo}: {e}")
 
-        return np.array(imagens, dtype=np.float32)
+        if len(imagens) == 0:
+            raise ValueError(
+                f"Nenhuma imagem encontrada em {diretorio}"
+            )
 
-    # ==================================================
-    # CARREGAR AS DUAS CLASSES
-    # ==================================================
-
-    X_clean = carregar_imagens(pasta_clean)
-
-    X_faulty = carregar_imagens(pasta_defeito)
-
-    # ==================================================
-    # INFORMAÇÕES
-    # ==================================================
-
-    print("\nDataset:")
-    print(f"  Clean:   {len(X_clean)} imagens")
-    print(f"  Faulty:  {len(X_faulty)} imagens")
-
-    print(f"\nShape X_clean:  {X_clean.shape}")
-    print(f"Shape X_faulty: {X_faulty.shape}")
-
-    return X_clean, X_faulty
+        return torch.stack(imagens)
 
 
 
