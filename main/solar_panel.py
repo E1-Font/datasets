@@ -113,7 +113,8 @@ def carregar_dataset(grr, img_size=(128, 128)):
     # ==================================================
     # CARREGAR IMAGENS
     # ==================================================
-def carregar_imagens(diretorio):
+
+   def carregar_imagens(diretorio):
 
     imagens = []
 
