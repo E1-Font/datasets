@@ -113,50 +113,48 @@ def carregar_dataset(grr, img_size=(128, 128)):
     # ==================================================
     # CARREGAR IMAGENS
     # ==================================================
+def carregar_imagens(diretorio):
 
-    def carregar_imagens(diretorio):
+    imagens = []
 
-        imagens = []
-
-        extensoes = {
+    extensoes = {
         ".jpg",
         ".jpeg",
         ".png",
         ".bmp",
         ".webp"
-        }
+    }
 
-        for arquivo in sorted(Path(diretorio).rglob("*")):
+    for arquivo in sorted(Path(diretorio).rglob("*")):
 
-            if arquivo.suffix.lower() not in extensoes:
-                continue
+        if arquivo.suffix.lower() not in extensoes:
+            continue
 
-            try:
-                img = Image.open(arquivo).convert("RGB")
-                img = img.resize(img_size)
+        try:
+            img = Image.open(arquivo).convert("RGB")
+            img = img.resize(img_size)
 
-                img = np.asarray(
-                    img,
-                    dtype=np.float32
-                ) / 255.0
+            img = np.asarray(
+                img,
+                dtype=np.float32
+            ) / 255.0
 
-                # HWC -> CHW
-                img = torch.from_numpy(
-                    img
-                ).permute(2, 0, 1).contiguous()
+            # HWC -> CHW
+            img = torch.from_numpy(
+                img
+            ).permute(2, 0, 1).contiguous()
 
-                imagens.append(img)
+            imagens.append(img)
 
-            except Exception as e:
-                print(f"Erro ao carregar {arquivo}: {e}")
+        except Exception as e:
+            print(f"Erro ao carregar {arquivo}: {e}")
 
-        if len(imagens) == 0:
-            raise ValueError(
-                f"Nenhuma imagem encontrada em {diretorio}"
-            )
+    if len(imagens) == 0:
+        raise ValueError(
+            f"Nenhuma imagem encontrada em {diretorio}"
+        )
 
-        return torch.stack(imagens)
-
+    return torch.stack(imagens)
 
 
 import matplotlib.pyplot as plt
