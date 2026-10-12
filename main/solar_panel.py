@@ -141,9 +141,9 @@ def carregar_dataset(grr, img_size=(128, 128)):
                 ) / 255.0
 
                 # HWC -> CHW
-                #img = torch.from_numpy(
-                #    img
-                #).permute(2, 0, 1).contiguous()
+                img = torch.from_numpy(
+                    img
+                ).permute(2, 0, 1).contiguous()
 
                 imagens.append(img)
 
@@ -221,11 +221,11 @@ def plotar_imagens(X_clean, X_faulty, n=5, seed=42):
             imagem = imagem.detach().cpu().numpy()
 
         # CHW -> HWC
-        #if imagem.shape[0] in (1, 3):
-        #    imagem = np.transpose(
-        #        imagem,
-        #        (1, 2, 0)
-        #    )
+        if imagem.shape[0] in (1, 3):
+            imagem = np.transpose(
+                imagem,
+                (1, 2, 0)
+            )
 
         return np.clip(imagem, 0, 1)
 
