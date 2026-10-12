@@ -124,7 +124,7 @@ def carregar_dataset(grr, img_size=(128, 128)):
         ".png",
         ".bmp",
         ".webp"
-    }
+        }
 
         for arquivo in sorted(Path(diretorio).rglob("*")):
 
@@ -163,41 +163,81 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+
+
 def plotar_imagens(X_clean, X_faulty, n=5, seed=42):
-    
+
     rng = np.random.default_rng(seed)
 
     n_clean = min(n, len(X_clean))
     n_faulty = min(n, len(X_faulty))
+    n_colunas = max(n_clean, n_faulty)
 
-    idx_clean = rng.choice(len(X_clean), n_clean, replace=False)
-    idx_faulty = rng.choice(len(X_faulty), n_faulty, replace=False)
-
-    fig, axes = plt.subplots(
-        2, max(n_clean, n_faulty),
-        figsize=(3 * max(n_clean, n_faulty), 6)
+    idx_clean = rng.choice(
+        len(X_clean),
+        n_clean,
+        replace=False
     )
 
-    # Garantir que axes seja sempre uma matriz
+    idx_faulty = rng.choice(
+        len(X_faulty),
+        n_faulty,
+        replace=False
+    )
+
+    fig, axes = plt.subplots(
+        2,
+        n_colunas,
+        figsize=(3 * n_colunas, 6)
+    )
+
     axes = np.atleast_2d(axes)
 
-    # Imagens clean
+    def preparar_imagem(X, idx):
+
+        imagem = X[idx]
+
+        if torch.is_tensor(imagem):
+            imagem = imagem.detach().cpu().numpy()
+
+        # CHW -> HWC
+        if imagem.shape[0] in (1, 3):
+            imagem = np.transpose(
+                imagem,
+                (1, 2, 0)
+            )
+
+        return np.clip(imagem, 0, 1)
+
     for i, idx in enumerate(idx_clean):
-        axes[0, i].imshow(X_clean[idx])
+
+        imagem = preparar_imagem(
+            X_clean,
+            idx
+        )
+
+        axes[0, i].imshow(imagem)
         axes[0, i].set_title("Clean")
         axes[0, i].axis("off")
 
-    # Imagens com defeito
     for i, idx in enumerate(idx_faulty):
-        axes[1, i].imshow(X_faulty[idx])
+
+        imagem = preparar_imagem(
+            X_faulty,
+            idx
+        )
+
+        axes[1, i].imshow(imagem)
         axes[1, i].set_title("Faulty")
         axes[1, i].axis("off")
 
-    # Ocultar espaços não utilizados
-    for i in range(n_clean, axes.shape[1]):
+    for i in range(n_clean, n_colunas):
         axes[0, i].axis("off")
 
-    for i in range(n_faulty, axes.shape[1]):
+    for i in range(n_faulty, n_colunas):
         axes[1, i].axis("off")
 
     plt.tight_layout()
