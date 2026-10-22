@@ -27,7 +27,7 @@ def normalizar_grr(grr):
     return grr.zfill(8)
 
 
-def carregar_dados_por_grr(
+def carregar_dados(
     grr,
     arquivo="data.h5",
     grrs_turma=None
